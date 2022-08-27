@@ -1,0 +1,43 @@
+- name: install postgresql
+  ansible.builtin.apt:
+    pkg:
+      - postgresql 
+      - postgresql-contrib
+    state: present
+    update_cache: yes
+  become: true
+  notify:
+    - reload postgresql
+
+- name: install postgresql tools
+  ansible.builtin.apt:
+    pkg:
+      - libpq-dev
+      - python3-psycopg2
+    state: present
+    update_cache: yes
+  become: true
+
+- name: create database
+  community.postgresql.postgresql_db:
+    name: '{{ database_name }}'
+    state: present
+  become: true
+  become_user: postgres
+
+- name: create user database
+  community.postgresql.postgresql_user:
+    name: '{{ database_username }}'
+    password: '{{ database_password }}'
+    state: present
+  become: true
+  become_user: postgres
+
+- name: GRANT ALL PRIVILEGES ON DATABASE library TO librarian
+  community.postgresql.postgresql_privs:
+    db: '{{ database_name }}'
+    privs: ALL
+    type: database
+    role: '{{ database_username }}'
+  become: true
+  become_user: postgres

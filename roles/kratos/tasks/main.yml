@@ -1,0 +1,49 @@
+- name: Check that kratos exists
+  ansible.builtin.stat:
+    path: /usr/local/bin/kratos
+  register: stat_result
+
+# check kratos version
+
+- name: get kratos
+  block:
+      - name: download kratos
+        ansible.builtin.get_url:
+          url: 'https://github.com/ory/kratos/releases/download/v{{ kratos_version }}/kratos_{{ kratos_version }}-linux_64bit.tar.gz'
+          dest: /tmp
+      - name: extract kratos
+        ansible.builtin.unarchive:
+          src: /tmp/kratos_{{ kratos_version }}-linux_64bit.tar.gz
+          dest: /usr/local/bin
+          include: kratos
+          remote_src: yes
+  when: not stat_result.stat.exists
+
+- name: create  directory
+  file:
+    dest: /etc/ory/kratos
+    state: directory
+    owner: root
+    group: root
+  become: true
+
+- name: deploy kratos configuration
+  ansible.builtin.template:
+    src: kratos.yml.j2
+    dest: /etc/ory/kratos/kratos.yml
+    owner: root
+    group: root
+    mode: 0644
+  become: true
+
+- name: deploy identity schema
+  ansible.builtin.copy:
+    src: "{{ role_path }}/files/identity.schema.json"
+    dest: /etc/ory/kratos/identity.schema.json
+
+# To Do:
+
+# Migrate db
+# Create service unit file for Systemd
+
+# setup nginx
